@@ -35,25 +35,44 @@ class Board:
     def rows(self) -> int:
         return self.row_count
     
+    # Return which piece exists at the specified row and column
+    def get(self, col: int, row: int) -> int:
+        return self.data[col][row]
+    
+    # Place given piece at given coordinates (col, row)
+    def place_piece(self, col: int, row: int, piece: int):
+        self.data[col][row] = piece
+    
+    # Return last open row in given column (-1 if column is full)
+    def get_open_row(self, col: int) -> int:
+        for r in reversed(range(self.row_count)):
+            if self.get(col, r) == 0:
+                return r
+        return -1
+
+    # Return true if column is not full
+    def is_valid_column(self, col: int) -> bool:
+        return self.get(col, 0) == 0
+    
+    def get_valid_moves(self) -> list[int]:
+        return list(filter(self.is_valid_column, range(self.col_count)))
+    
     # Play the turn player's piece (val) in the chosen column, in the furthest row possible
     # Return the success of the play (True/False) and the current winner, if any
-    def play(self, val: int, col: int) -> tuple[bool, int]:
+    def play(self, piece: int, col: int) -> tuple[bool, int]:
 
         # Do not allow more plays if somebody has won
         if self.winner == 0:
 
             # Drop the piece into the first open space from the bottom
-            for i in reversed(range(self.row_count)):
-                if self.data[col][i] == 0:
-                    self.data[col][i] = val
-                    self.last_play = (col, i)
-                    self.winner = self.check_win()
-                    return (True, self.winner)
+            row = self.get_open_row(col)
+            if row in range(self.row_count):
+                self.place_piece(col, row, piece)
+                self.last_play = (col, row)
+                self.winner = self.check_win()
+                return (True, self.winner)
+            
         return (False, self.winner)
-    
-    # Return which piece exists at the specified row and column
-    def get(self, col: int, row: int) -> int:
-        return self.data[col][row]
     
     # Return the winning player
     # -1: draw
@@ -68,11 +87,11 @@ class Board:
         c, r = self.last_play
         last_player = self.get(c, r)
 
-        # Check a given line of numbers for 4 in a row equal to val
-        def check_four(line: list[int], val: int) -> bool:
+        # Check a line for 4 of the given piece in a row
+        def check_four(line: list[int], piece: int) -> bool:
             count = 0
-            for v in line:
-                if v == val:
+            for p in line:
+                if p == piece:
                     count += 1
                     if count >= 4:
                         return True
